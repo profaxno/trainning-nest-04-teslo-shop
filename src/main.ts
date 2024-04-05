@@ -19,13 +19,15 @@ async function bootstrap() {
     })
   )
 
-  await app.listen(3000);
+  await app.listen(process.env.PORT);
   
+  const env = process.env.ENV.padEnd(18, ' ');
+
   console.log(`
 ╔══════════════════════════╗
 ║ @org: Profaxno Company   ║
 ║ @app: teslo-shop         ║
-║ @enviroment: ${`${process.env.ENV}`.padEnd(12, ' ')}║
+║ @env: ${env} ║
 ╚══════════════════════════╝
 
 running at PORT: ${process.env.PORT}...`

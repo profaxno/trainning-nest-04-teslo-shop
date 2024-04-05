@@ -1,13 +1,25 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductsModule } from './products/products.module';
 import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
+import { FilesModule } from './files/files.module';
+import { AutomapperModule } from '@automapper/nestjs';
+import { classes } from '@automapper/classes';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    AutomapperModule.forRoot({
+      strategyInitializer: classes()
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -20,7 +32,8 @@ import { SeedModule } from './seed/seed.module';
     }),
     ProductsModule,
     CommonModule,
-    SeedModule
+    SeedModule,
+    FilesModule
   ],
   controllers: [],
   providers: [],

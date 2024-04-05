@@ -8,6 +8,9 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ProductImage } from './entities';
+import { ConfigService } from '@nestjs/config';
+import { Mapper, createMap } from '@automapper/core';
+import { InjectMapper } from '@automapper/nestjs';
 
 @Injectable()
 export class ProductsService {
@@ -21,7 +24,11 @@ export class ProductsService {
     @InjectRepository(ProductImage)
     private readonly productImageRepository: Repository<ProductImage>,
 
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
+
+    @InjectMapper()
+    private readonly mapper: Mapper
   ){}
 
   async create(createProductDto: CreateProductDto) {
@@ -165,4 +172,33 @@ export class ProductsService {
       throw new InternalServerErrorException("General error, remove all no executed check server logs");
     }
   }
+
+  async createUploadImage(createProductDto: CreateProductDto, files : Express.Multer.File[]) {
+    try{
+      const imageNames = files.map(file => file.filename);
+
+      const {images = [], ...attributes} = createProductDto;
+
+      const product = this.productRepository.create({
+        images: imageNames.map( name => this.productImageRepository.create({url: name})), 
+        ...attributes});
+
+      await this.productRepository.save(product);
+
+      createProductDto = this.mapper.map(product, Product, CreateProductDto);
+      
+      //return {...product, images};
+      return createProductDto;
+
+    }catch(error){
+      console.log(error);
+
+      if(error.code === '23505'){
+        throw new BadRequestException(`Product already exist [${error.detail}]`);
+      }
+      
+      throw new InternalServerErrorException("General error, create no executed check server logs");
+    }
+  }
+
 }
