@@ -11,6 +11,7 @@ import { ProductImage } from './entities';
 import { ConfigService } from '@nestjs/config';
 import { Mapper, createMap } from '@automapper/core';
 import { InjectMapper } from '@automapper/nestjs';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class ProductsService {
@@ -31,13 +32,15 @@ export class ProductsService {
     private readonly mapper: Mapper
   ){}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, user: User) {
     try{
       const {images = [], ...attributes} = createProductDto;
 
       const product = this.productRepository.create({
         images: images.map( image => this.productImageRepository.create({url: image})), 
-        ...attributes});
+        ...attributes,
+        user
+      });
 
       await this.productRepository.save(product);
 
@@ -45,12 +48,12 @@ export class ProductsService {
       return product;
 
     }catch(error){
-      this.logger.error(error);
-
       if(error.code === '23505'){
-        throw new BadRequestException(`Product already exist [${error.detail}]`);
+        throw new BadRequestException(`Product already exist ${error.detail}`);
       }
       
+      this.logger.error(error);
+
       throw new InternalServerErrorException("General error, create no executed check server logs");
     }
 
@@ -98,13 +101,13 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(id: string, updateProductDto: UpdateProductDto, user: User) {
     
-    const {images = [], ...attributes} = updateProductDto;
+    const {images = [], ...productData} = updateProductDto;
 
     const product = await this.productRepository.preload({
       id,
-      ...attributes
+      ...productData
     })
 
     if(!product){
@@ -123,6 +126,7 @@ export class ProductsService {
         product.images = images.map( image => this.productImageRepository.create({url: image}));
       }
 
+      product.user = user;
       await queryRunner.manager.save(product);
       await queryRunner.commitTransaction();
       await queryRunner.release();
@@ -135,11 +139,11 @@ export class ProductsService {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
 
-      this.logger.error(error);
-
       if(error.code === '23505'){
-        throw new BadRequestException(`Product already exist [${error.detail}]`);
+        throw new BadRequestException(`Product already exist ${error.detail}`);
       }
+
+      this.logger.error(error);
 
       throw new InternalServerErrorException("General error, update no executed check server logs");
     }
@@ -173,15 +177,17 @@ export class ProductsService {
     }
   }
 
-  async createUploadImage(createProductDto: CreateProductDto, files : Express.Multer.File[]) {
+  async createUploadImage(createProductDto: CreateProductDto, files : Express.Multer.File[], user: User) {
     try{
       const imageNames = files.map(file => file.filename);
 
-      const {images = [], ...attributes} = createProductDto;
+      const {images = [], ...productData} = createProductDto;
 
       const product = this.productRepository.create({
         images: imageNames.map( name => this.productImageRepository.create({url: name})), 
-        ...attributes});
+        ...productData,
+        user
+      });
 
       await this.productRepository.save(product);
 
@@ -191,12 +197,13 @@ export class ProductsService {
       return createProductDto;
 
     }catch(error){
-      console.log(error);
-
+      
       if(error.code === '23505'){
-        throw new BadRequestException(`Product already exist [${error.detail}]`);
+        throw new BadRequestException(`Product already exist ${error.detail}`);
       }
       
+      this.logger.error(error);
+
       throw new InternalServerErrorException("General error, create no executed check server logs");
     }
   }

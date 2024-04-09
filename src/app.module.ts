@@ -10,6 +10,7 @@ import { SeedModule } from './seed/seed.module';
 import { FilesModule } from './files/files.module';
 import { AutomapperModule } from '@automapper/nestjs';
 import { classes } from '@automapper/classes';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { classes } from '@automapper/classes';
     ProductsModule,
     CommonModule,
     SeedModule,
-    FilesModule
+    FilesModule,
+    AuthModule
   ],
   controllers: [],
   providers: [],
