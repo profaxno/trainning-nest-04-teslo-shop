@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, Query, UseInterceptors, UploadedFile, BadRequestException, ValidationPipe, ArgumentMetadata, UploadedFiles } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { ValidRoles } from 'src/auth/interfaces/valid-roles.inteface';
 import { Auth } from 'src/auth/decorators/auth.decorator';
@@ -12,17 +13,22 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { filterImageFiles2, renameFile } from 'src/files/helpers';
 import { User } from 'src/auth/entities/user.entity';
+import { Product } from './entities';
 
 interface Body {
   body: string;
 }
 
+@ApiTags('Products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @Auth(ValidRoles.admin)
+  @ApiResponse({ status: 201, description: 'Product was created', type: Product })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Token related' })
   create(@Body() createProductDto: CreateProductDto, @GetUser() user) {
     return this.productsService.create(createProductDto, user);
   }
